@@ -9,7 +9,6 @@
 #       data_layer: Ash.DataLayer.Postgres,
 #       extensions: [AshCanonicalIdentity]
 
-
 #     attributes do
 #       uuid_primary_key :id
 
@@ -26,7 +25,6 @@
 #       domain: Domain,
 #       data_layer: Ash.DataLayer.Postgres,
 #       extensions: [AshCanonicalIdentity]
-
 
 #     attributes do
 #       uuid_primary_key :id
