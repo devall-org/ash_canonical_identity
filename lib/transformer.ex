@@ -87,7 +87,7 @@ defmodule AshCanonicalIdentity.Transformer do
         Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :argument,
           name: attr_name,
           type: type,
-          allow_nil?: false
+          allow_nil?: true
         )
       end)
 

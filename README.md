@@ -9,7 +9,7 @@ Add `ash_canonical_identity` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ash_canonical_identity, "~> 0.1.0"}
+    {:ash_canonical_identity, "~> 0.1.1"}
   ]
 end
 ```
