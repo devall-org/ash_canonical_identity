@@ -51,7 +51,7 @@ defmodule AshCanonicalIdentity.Transformer do
         {:ok, dsl_state} = dsl_state |> Builder.add_identity(name, attr_names, opts)
 
         if action_name do
-          action_name = if action_name == :auto, do: :"get_by_#{name_joined}", else: action_name
+          action_name = if action_name == :auto, do: :"get_by_#{name}", else: action_name
           {:ok, dsl_state |> add_action(action_name, attr_names, opts)}
         else
           {:ok, dsl_state}
