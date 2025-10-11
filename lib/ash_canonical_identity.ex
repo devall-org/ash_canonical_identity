@@ -1,6 +1,15 @@
 defmodule AshCanonicalIdentity do
   defmodule Identity do
-    defstruct [:attr_or_belongs_toes, :all_tenants?, :name, :action, :where, :nils_distinct?]
+    defstruct [
+      :attr_or_belongs_toes,
+      :all_tenants?,
+      :name,
+      :action,
+      :where,
+      :nils_distinct?,
+      :select,
+      :__spark_metadata__
+    ]
   end
 
   @identity %Spark.Dsl.Entity{
