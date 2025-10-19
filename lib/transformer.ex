@@ -9,8 +9,7 @@ defmodule AshCanonicalIdentity.Transformer do
   def after?(Ash.Resource.Transformers.BelongsToAttribute), do: true
   def after?(_), do: false
 
-  def before?(Ash.Resource.Transformers.GetByReadActions), do: true
-  def before?(_), do: false
+  def before?(_), do: true
 
   def transform(dsl_state) do
     attrs =
