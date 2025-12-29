@@ -36,7 +36,8 @@ defmodule AshCanonicalIdentity.Transformer do
            attr_or_belongs_toes: attr_or_belongs_toes,
            all_tenants?: all_tenants?,
            name: name,
-           action: action_name,
+           get_action: get_action,
+           list_action: list_action,
            where: where,
            nils_distinct?: nils_distinct?
          },
@@ -49,12 +50,25 @@ defmodule AshCanonicalIdentity.Transformer do
 
         {:ok, dsl_state} = dsl_state |> Builder.add_identity(name, attr_names, opts)
 
-        if action_name do
-          action_name = if action_name == :auto, do: :"get_by_#{name}", else: action_name
-          {:ok, dsl_state |> add_action(action_name, attr_names, opts)}
-        else
-          {:ok, dsl_state}
-        end
+        # get_action 처리
+        dsl_state =
+          if get_action do
+            action_name = if get_action == :auto, do: :"get_by_#{name}", else: get_action
+            add_get_action(dsl_state, action_name, attr_names, opts)
+          else
+            dsl_state
+          end
+
+        # list_action 처리
+        dsl_state =
+          if list_action do
+            action_name = if list_action == :auto, do: :"list_by_#{name}", else: list_action
+            add_list_action(dsl_state, action_name, attr_names, opts)
+          else
+            dsl_state
+          end
+
+        {:ok, dsl_state}
       end
     )
   end
@@ -70,7 +84,7 @@ defmodule AshCanonicalIdentity.Transformer do
     end)
   end
 
-  defp add_action(dsl_state, action_name, attr_names, opts) do
+  defp add_get_action(dsl_state, action_name, attr_names, opts) do
     import Ash.Expr
 
     where = opts |> Keyword.fetch!(:where)
@@ -114,6 +128,32 @@ defmodule AshCanonicalIdentity.Transformer do
     )
     |> Builder.add_interface(action_name,
       args: attr_names
+    )
+    |> then(fn {:ok, dsl_state} -> dsl_state end)
+  end
+
+  defp add_list_action(dsl_state, action_name, attr_names, opts) do
+    where = opts |> Keyword.fetch!(:where)
+
+    action_argument =
+      Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :argument,
+        name: :values,
+        type: {:array, :term},
+        allow_nil?: false
+      )
+
+    action_prepare =
+      Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :prepare,
+        preparation: {AshCanonicalIdentity.ListPreparation, attr_names: attr_names, where: where}
+      )
+
+    dsl_state
+    |> Builder.add_action(:read, action_name,
+      arguments: [action_argument],
+      preparations: [action_prepare]
+    )
+    |> Builder.add_interface(action_name,
+      args: [:values]
     )
     |> then(fn {:ok, dsl_state} -> dsl_state end)
   end

@@ -4,7 +4,8 @@ defmodule AshCanonicalIdentity do
       :attr_or_belongs_toes,
       :all_tenants?,
       :name,
-      :action,
+      :get_action,
+      :list_action,
       :where,
       :nils_distinct?,
       :select,
@@ -41,13 +42,18 @@ defmodule AshCanonicalIdentity do
         If :auto, it will be generated as cart_product when attr_or_belongs_toes is [:cart, :product].
         """
       ],
-      action: [
+      get_action: [
         type: :atom,
         default: :auto,
         doc: """
-        Name to be used in actions and code_interface.
-        If :auto, it will be generated as get_by_cart_product when attr_or_belongs_toes is [:cart, :product].
-        If false, no action will be created.
+        Name for get_by action. If :auto, generates get_by_cart_product. If false, no action created.
+        """
+      ],
+      list_action: [
+        type: :atom,
+        default: :auto,
+        doc: """
+        Name for list_by action. If :auto, generates list_by_cart_product. If false, no action created.
         """
       ],
       where: [

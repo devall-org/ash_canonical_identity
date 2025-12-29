@@ -2,7 +2,7 @@
 
 ## Purpose
 
-AshCanonicalIdentity is an Ash extension that automatically generates identity, get_by read action, and code_interface for unique keys.
+AshCanonicalIdentity is an Ash extension that automatically generates identity, get_by/list_by read actions, and code_interface for unique keys.
 
 ## Setup
 
@@ -15,7 +15,7 @@ end
 
 ## Basic Usage
 
-Define an identity in the `canonical_identities` block to automatically generate an identity, get_by action, and code_interface:
+Define an identity in the `canonical_identities` block to automatically generate an identity, get_by/list_by actions, and code_interface:
 
 ```elixir
 defmodule PostTag do
@@ -37,26 +37,21 @@ defmodule PostTag do
 end
 ```
 
-This has the same effect as writing:
+This generates:
+- `get_by_post_tag(post_id, tag)` - returns single record
+- `list_by_post_tag(values)` - returns multiple records
+
+### Usage Examples
 
 ```elixir
-identities do
-  identity :post_tag, [:post_id, :tag]
-end
+# get_by - single record lookup
+PostTag.get_by_post_tag!(post_id, "elixir")
 
-actions do
-  read :get_by_post_tag do
-    get? true
-    argument :post_id, :uuid, allow_nil?: false
-    argument :tag, :string, allow_nil?: false
-    filter expr(post_id == ^arg(:post_id))
-    filter expr(tag == ^arg(:tag))
-  end
-end
-
-code_interface do
-  define :get_by_post_tag, args: [:post_id, :tag]
-end
+# list_by - bulk lookup (tuple order matches get_by args)
+PostTag.list_by_post_tag!([
+  {post1_id, "elixir"},
+  {post2_id, "phoenix"}
+])
 ```
 
 ## Options
@@ -73,18 +68,31 @@ end
 
 `:auto` (default): Automatically generates `cart_product` from `[:cart, :product]`
 
-### action
+### get_action
 
-Specify the action and code_interface name:
+Specify the get_by action and code_interface name:
 
 ```elixir
 canonical_identities do
-  identity [:post, :tag], action: :find_by_post_and_tag
+  identity [:post, :tag], get_action: :find_by_post_and_tag
 end
 ```
 
 `:auto` (default): Automatically generates `get_by_cart_product` from `[:cart, :product]`
-`false`: Don't create action and code_interface
+`false`: Don't create get_by action and code_interface
+
+### list_action
+
+Specify the list_by action and code_interface name:
+
+```elixir
+canonical_identities do
+  identity [:post, :tag], list_action: :find_all_by_post_and_tag
+end
+```
+
+`:auto` (default): Automatically generates `list_by_cart_product` from `[:cart, :product]`
+`false`: Don't create list_by action and code_interface
 
 ### all_tenants?
 
@@ -119,13 +127,14 @@ end
 ## When to Use
 
 - When you need a get_by pattern for unique keys
+- When you need to bulk fetch records by composite keys (list_by)
 - When dealing with composite unique constraints
 - When working with unique constraints that include belongs_to relationships
 
 ## Best Practices
 
 - Use relationship names (`:post`) instead of foreign key names (`:post_id`) when referencing belongs_to relationships
-- Retrieve using the generated code_interface: `Domain.get_by_post_tag!(post_id, tag)`
+- Retrieve single record using: `Domain.get_by_post_tag!(post_id, tag)`
+- Retrieve multiple records using: `Domain.list_by_post_tag!([{id1, t1}, {id2, t2}])` (tuple order matches get_by args)
 - Explicitly set `name:` option if the identity name isn't clear
-- Set `action: false` if you don't need the action
-
+- Set `get_action: false` or `list_action: false` if you don't need the respective action

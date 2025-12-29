@@ -1,62 +1,60 @@
-# defmodule AshCanonicalIdentityTest.Case do
-#   use ExUnit.Case, async: true
+defmodule AshCanonicalIdentityTest do
+  use ExUnit.Case, async: false
 
-#   alias __MODULE__.{Post, PostTag, Domain}
+  alias AshCanonicalIdentity.Test.{Post, PostTag, Repo}
 
-#   defmodule Post do
-#     use Ash.Resource,
-#       domain: Domain,
-#       data_layer: Ash.DataLayer.Postgres,
-#       extensions: [AshCanonicalIdentity]
+  setup do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
+    :ok
+  end
 
-#     attributes do
-#       uuid_primary_key :id
+  describe "get_action" do
+    test "get_by_title returns single post" do
+      post = Ash.create!(Post, %{title: "hello"})
 
-#       attribute :title, :string, allow_nil?: false, public?: true
-#     end
+      assert post.id == Post.get_by_title!("hello").id
+      assert {:error, %Ash.Error.Invalid{}} = Post.get_by_title("world")
+    end
 
-#     actions do
-#       defaults [:read, :destroy, create: :*, update: :*]
-#     end
-#   end
+    test "get_by_post_tag with belongs_to" do
+      post = Ash.create!(Post, %{title: "test"})
+      post_tag = Ash.create!(PostTag, %{post_id: post.id, tag: "elixir"})
 
-#   defmodule PostTag do
-#     use Ash.Resource,
-#       domain: Domain,
-#       data_layer: Ash.DataLayer.Postgres,
-#       extensions: [AshCanonicalIdentity]
+      assert post_tag.id == PostTag.get_by_post_tag!(post.id, "elixir").id
+      assert {:error, %Ash.Error.Invalid{}} = PostTag.get_by_post_tag(post.id, "other")
+    end
+  end
 
-#     attributes do
-#       uuid_primary_key :id
+  describe "list_action" do
+    test "list_by_title returns multiple posts" do
+      Ash.create!(Post, %{title: "a"})
+      Ash.create!(Post, %{title: "b"})
+      Ash.create!(Post, %{title: "c"})
 
-#       attribute :tag, :string, allow_nil?: true, public?: true
-#     end
+      result = Post.list_by_title!([{"a"}, {"c"}])
 
-#     actions do
-#       defaults [:read, :destroy, create: :*, update: :*]
-#     end
+      assert length(result) == 2
+      assert Enum.map(result, & &1.title) |> Enum.sort() == ["a", "c"]
+    end
 
-#     relationships do
-#       belongs_to :post, Post, allow_nil?: false, public?: true
-#     end
+    test "list_by_post_tag with multiple columns" do
+      post1 = Ash.create!(Post, %{title: "p1"})
+      post2 = Ash.create!(Post, %{title: "p2"})
 
-#     canonical_identities do
-#       identity [:post, :tag]
-#     end
-#   end
+      pt1 = Ash.create!(PostTag, %{post_id: post1.id, tag: "t1"})
+      _pt2 = Ash.create!(PostTag, %{post_id: post1.id, tag: "t2"})
+      pt3 = Ash.create!(PostTag, %{post_id: post2.id, tag: "t1"})
 
-#   defmodule Domain do
-#     use Ash.Domain, validate_config_inclusion?: false
+      result =
+        PostTag.list_by_post_tag!([
+          {post1.id, "t1"},
+          {post2.id, "t1"}
+        ])
 
-#     resources do
-#       resource Post
-#       resource PostTag
-#     end
-#   end
-
-#   test "canonical_identity" do
-#     assert %{} = Ash.Resource.Info.identity(PostTag, :post_tag)
-#     assert %{get?: true} = Ash.Resource.Info.action(PostTag, :get_by_post_tag)
-#     assert %{} = Ash.Resource.Info.interface(PostTag, :get_by_post_tag)
-#   end
-# end
+      assert length(result) == 2
+      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+      expected_ids = [pt1.id, pt3.id] |> Enum.sort()
+      assert result_ids == expected_ids
+    end
+  end
+end
