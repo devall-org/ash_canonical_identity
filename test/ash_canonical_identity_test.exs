@@ -3,6 +3,8 @@ defmodule AshCanonicalIdentityTest do
 
   alias AshCanonicalIdentity.Test.{Post, PostTag, Repo}
 
+  import ExUnit.CaptureLog
+
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
     :ok
@@ -77,18 +79,24 @@ defmodule AshCanonicalIdentityTest do
       _p5 = Ash.create!(Post, %{title: "p5", subtitle: "s5", category: "c5"})
 
       # Search with nil values - uses IS NOT DISTINCT FROM
-      result =
-        Post.list_by_subtitle_category!([
-          {"s1", "c1"},
-          {nil, "c2"},
-          {"s3", nil},
-          {nil, nil}
-        ])
+      log =
+        capture_log(fn ->
+          result =
+            Post.list_by_subtitle_category!([
+              {"s1", "c1"},
+              {nil, "c2"},
+              {"s3", nil},
+              {nil, nil}
+            ])
 
-      assert length(result) == 4
-      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
-      expected_ids = [p1.id, p2.id, p3.id, p4.id] |> Enum.sort()
-      assert result_ids == expected_ids
+          assert length(result) == 4
+          result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+          expected_ids = [p1.id, p2.id, p3.id, p4.id] |> Enum.sort()
+          assert result_ids == expected_ids
+        end)
+
+      # Should use IS NOT DISTINCT FROM when there are nil values
+      assert log =~ "IS NOT DISTINCT FROM"
     end
 
     test "list_by_subtitle_category without nil values uses IN" do
@@ -96,17 +104,23 @@ defmodule AshCanonicalIdentityTest do
       p2 = Ash.create!(Post, %{title: "p2", subtitle: "s2", category: "c2"})
       _p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3", category: "c3"})
 
-      # Search without nil - uses IN
-      result =
-        Post.list_by_subtitle_category!([
-          {"s1", "c1"},
-          {"s2", "c2"}
-        ])
+      # Search without nil - uses IN (or = with OR, not IS NOT DISTINCT FROM)
+      log =
+        capture_log(fn ->
+          result =
+            Post.list_by_subtitle_category!([
+              {"s1", "c1"},
+              {"s2", "c2"}
+            ])
 
-      assert length(result) == 2
-      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
-      expected_ids = [p1.id, p2.id] |> Enum.sort()
-      assert result_ids == expected_ids
+          assert length(result) == 2
+          result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+          expected_ids = [p1.id, p2.id] |> Enum.sort()
+          assert result_ids == expected_ids
+        end)
+
+      # Should NOT use IS NOT DISTINCT FROM when there are no nil values
+      refute log =~ "IS NOT DISTINCT FROM"
     end
 
     test "list_by_subtitle_category raises when over 100 tuples with nil" do
@@ -128,12 +142,18 @@ defmodule AshCanonicalIdentityTest do
       _p4 = Ash.create!(Post, %{title: "p4", subtitle: "s4"})
 
       # Single column with nil - passed as list of values
-      result = Post.list_by_subtitle!(["s1", nil, "s3"])
+      log =
+        capture_log(fn ->
+          result = Post.list_by_subtitle!(["s1", nil, "s3"])
 
-      assert length(result) == 3
-      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
-      expected_ids = [p1.id, p2.id, p3.id] |> Enum.sort()
-      assert result_ids == expected_ids
+          assert length(result) == 3
+          result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+          expected_ids = [p1.id, p2.id, p3.id] |> Enum.sort()
+          assert result_ids == expected_ids
+        end)
+
+      # Should use IS NOT DISTINCT FROM when there are nil values
+      assert log =~ "IS NOT DISTINCT FROM"
     end
 
     test "list_by_subtitle with single column without nil (list of values)" do
@@ -142,12 +162,18 @@ defmodule AshCanonicalIdentityTest do
       p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3"})
 
       # Single column without nil - IN approach
-      result = Post.list_by_subtitle!(["s1", "s3"])
+      log =
+        capture_log(fn ->
+          result = Post.list_by_subtitle!(["s1", "s3"])
 
-      assert length(result) == 2
-      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
-      expected_ids = [p1.id, p3.id] |> Enum.sort()
-      assert result_ids == expected_ids
+          assert length(result) == 2
+          result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+          expected_ids = [p1.id, p3.id] |> Enum.sort()
+          assert result_ids == expected_ids
+        end)
+
+      # Should NOT use IS NOT DISTINCT FROM when there are no nil values
+      refute log =~ "IS NOT DISTINCT FROM"
     end
   end
 
