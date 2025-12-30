@@ -130,25 +130,25 @@ defmodule AshCanonicalIdentityTest do
       assert log =~ "IS NOT DISTINCT FROM"
     end
 
-    test "list_by_subtitle_category raises when over max_list_size (multi-column)" do
+    test "list_by_subtitle_category raises when over unoptimized_list_limit (multi-column)" do
       Ash.create!(Post, %{title: "p1", subtitle: nil, category: nil})
 
       values = Enum.map(1..101, fn i -> {nil, "c#{i}"} end)
 
       assert_raise ArgumentError,
-                   "list_by action with OR expansion supports max 100 tuples, got 101",
+                   "list_by action without optimization supports max 100 items, got 101",
                    fn ->
                      Post.list_by_subtitle_category!(values)
                    end
     end
 
-    test "list_by_title does NOT enforce max_list_size (single-column with nils_distinct?: true)" do
-      # Create 150 posts (exceeds default max_list_size of 100)
+    test "list_by_title does NOT enforce unoptimized_list_limit (single-column with nils_distinct?: true)" do
+      # Create 150 posts (exceeds default unoptimized_list_limit of 100)
       Enum.each(1..150, fn i ->
         Ash.create!(Post, %{title: "post#{i}"})
       end)
 
-      # Should NOT raise - single column with nils_distinct?: true uses = ANY optimization
+      # Should NOT raise - single column with nils_distinct?: true can be optimized to = ANY
       values = Enum.map(1..150, fn i -> "post#{i}" end)
 
       log =
@@ -203,12 +203,12 @@ defmodule AshCanonicalIdentityTest do
       assert log =~ "IS NOT DISTINCT FROM"
     end
 
-    test "list_by_subtitle raises when over max_list_size (single-column with nils_distinct?: false)" do
-      # nils_distinct?: false requires OR expansion even for single column
+    test "list_by_subtitle raises when over unoptimized_list_limit (single-column with nils_distinct?: false)" do
+      # nils_distinct?: false cannot be optimized, even for single column
       values = Enum.map(1..101, fn i -> "s#{i}" end)
 
       assert_raise ArgumentError,
-                   "list_by action with OR expansion supports max 100 tuples, got 101",
+                   "list_by action without optimization supports max 100 items, got 101",
                    fn ->
                      Post.list_by_subtitle!(values)
                    end

@@ -32,7 +32,7 @@ defmodule AshCanonicalIdentity.Transformer do
     |> Transformer.get_entities([:canonical_identities])
     |> Enum.reduce(
       {:ok, dsl_state},
-      fn %AshCanonicalIdentity.Identity{
+      fn          %AshCanonicalIdentity.Identity{
            attr_or_belongs_toes: attr_or_belongs_toes,
            all_tenants?: all_tenants?,
            name: name,
@@ -40,7 +40,7 @@ defmodule AshCanonicalIdentity.Transformer do
            list_action: list_action,
            where: where,
            nils_distinct?: nils_distinct?,
-           max_list_size: max_list_size
+           unoptimized_list_limit: unoptimized_list_limit
          },
          {:ok, dsl_state} ->
         name_joined = Enum.join(attr_or_belongs_toes, "_") |> String.to_atom()
@@ -48,7 +48,7 @@ defmodule AshCanonicalIdentity.Transformer do
 
         attr_names = attr_or_belongs_toes |> Enum.map(&Map.fetch!(name_to_attr_name_map, &1))
 
-        # Options for Ash identity (max_list_size is not an Ash identity option)
+        # Options for Ash identity (unoptimized_list_limit is not an Ash identity option)
         identity_opts = [all_tenants?: all_tenants?, where: where, nils_distinct?: nils_distinct?]
 
         # Options for our actions
@@ -56,7 +56,7 @@ defmodule AshCanonicalIdentity.Transformer do
           all_tenants?: all_tenants?,
           where: where,
           nils_distinct?: nils_distinct?,
-          max_list_size: max_list_size
+          unoptimized_list_limit: unoptimized_list_limit
         ]
 
         {:ok, dsl_state} = dsl_state |> Builder.add_identity(name, attr_names, identity_opts)
@@ -146,7 +146,7 @@ defmodule AshCanonicalIdentity.Transformer do
   defp add_list_action(dsl_state, action_name, attr_names, opts) do
     where = opts |> Keyword.fetch!(:where)
     nils_distinct? = opts |> Keyword.fetch!(:nils_distinct?)
-    max_list_size = opts |> Keyword.fetch!(:max_list_size)
+    unoptimized_list_limit = opts |> Keyword.fetch!(:unoptimized_list_limit)
 
     action_argument =
       Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :argument,
@@ -162,7 +162,7 @@ defmodule AshCanonicalIdentity.Transformer do
            attr_names: attr_names,
            where: where,
            nils_distinct?: nils_distinct?,
-           max_list_size: max_list_size}
+           unoptimized_list_limit: unoptimized_list_limit}
       )
 
     dsl_state
