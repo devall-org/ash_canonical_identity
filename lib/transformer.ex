@@ -39,22 +39,33 @@ defmodule AshCanonicalIdentity.Transformer do
            get_action: get_action,
            list_action: list_action,
            where: where,
-           nils_distinct?: nils_distinct?
+           nils_distinct?: nils_distinct?,
+           max_list_size: max_list_size
          },
          {:ok, dsl_state} ->
         name_joined = Enum.join(attr_or_belongs_toes, "_") |> String.to_atom()
         name = if name == :auto, do: name_joined, else: name
 
         attr_names = attr_or_belongs_toes |> Enum.map(&Map.fetch!(name_to_attr_name_map, &1))
-        opts = [all_tenants?: all_tenants?, where: where, nils_distinct?: nils_distinct?]
 
-        {:ok, dsl_state} = dsl_state |> Builder.add_identity(name, attr_names, opts)
+        # Options for Ash identity (max_list_size is not an Ash identity option)
+        identity_opts = [all_tenants?: all_tenants?, where: where, nils_distinct?: nils_distinct?]
+
+        # Options for our actions
+        action_opts = [
+          all_tenants?: all_tenants?,
+          where: where,
+          nils_distinct?: nils_distinct?,
+          max_list_size: max_list_size
+        ]
+
+        {:ok, dsl_state} = dsl_state |> Builder.add_identity(name, attr_names, identity_opts)
 
         # Handle get_action
         dsl_state =
           if get_action do
             action_name = if get_action == :auto, do: :"get_by_#{name}", else: get_action
-            add_get_action(dsl_state, action_name, attr_names, opts)
+            add_get_action(dsl_state, action_name, attr_names, action_opts)
           else
             dsl_state
           end
@@ -63,7 +74,7 @@ defmodule AshCanonicalIdentity.Transformer do
         dsl_state =
           if list_action do
             action_name = if list_action == :auto, do: :"list_by_#{name}", else: list_action
-            add_list_action(dsl_state, action_name, attr_names, opts)
+            add_list_action(dsl_state, action_name, attr_names, action_opts)
           else
             dsl_state
           end
@@ -135,6 +146,7 @@ defmodule AshCanonicalIdentity.Transformer do
   defp add_list_action(dsl_state, action_name, attr_names, opts) do
     where = opts |> Keyword.fetch!(:where)
     nils_distinct? = opts |> Keyword.fetch!(:nils_distinct?)
+    max_list_size = opts |> Keyword.fetch!(:max_list_size)
 
     action_argument =
       Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :argument,
@@ -147,7 +159,10 @@ defmodule AshCanonicalIdentity.Transformer do
       Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :prepare,
         preparation:
           {AshCanonicalIdentity.ListPreparation,
-           attr_names: attr_names, where: where, nils_distinct?: nils_distinct?}
+           attr_names: attr_names,
+           where: where,
+           nils_distinct?: nils_distinct?,
+           max_list_size: max_list_size}
       )
 
     dsl_state

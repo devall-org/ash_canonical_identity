@@ -8,6 +8,7 @@ defmodule AshCanonicalIdentity do
       :list_action,
       :where,
       :nils_distinct?,
+      :max_list_size,
       :select,
       :__spark_metadata__
     ]
@@ -66,6 +67,29 @@ defmodule AshCanonicalIdentity do
         default: true,
         doc:
           "Whether or not `nil` values are considered always distinct from eachother. `nil` values won't conflict with eachother unless you set this option to `false`."
+      ],
+      max_list_size: [
+        type: :pos_integer,
+        default: 100,
+        doc: """
+        Maximum number of tuples allowed for list_by action. Raises ArgumentError if exceeded.
+
+        ## Why this limit exists
+
+        PostgreSQL doesn't natively support tuple lists in the IN operator (e.g., `WHERE (a, b) IN ((1, 2), (3, 4))`).
+        While single-column IN queries use efficient `= ANY(array)` syntax, multi-column queries must be expanded into OR conditions:
+
+        ```sql
+        WHERE ((a = 1 AND b = 2) OR (a = 3 AND b = 4) OR ...)
+        ```
+
+        Large OR chains can impact query performance and planning time. This limit prevents accidentally creating
+        queries with thousands of OR conditions. If you need to query more records, consider:
+
+        - Increasing this limit if your use case requires it
+        - Using a temporary table or JOIN approach for very large datasets
+        - Splitting the query into multiple batches
+        """
       ]
     ]
   }

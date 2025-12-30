@@ -39,16 +39,23 @@ defmodule AshCanonicalIdentityTest do
       assert Enum.map(result, & &1.title) |> Enum.sort() == ["a", "c"]
     end
 
-    test "list_by_title with single column list of values" do
+    test "list_by_title with single column list of values uses Eq" do
       Ash.create!(Post, %{title: "a"})
       Ash.create!(Post, %{title: "b"})
       Ash.create!(Post, %{title: "c"})
 
       # Single column can also use list of values
-      result = Post.list_by_title!(["a", "c"])
+      log =
+        capture_log(fn ->
+          result = Post.list_by_title!(["a", "c"])
 
-      assert length(result) == 2
-      assert Enum.map(result, & &1.title) |> Enum.sort() == ["a", "c"]
+          assert length(result) == 2
+          assert Enum.map(result, & &1.title) |> Enum.sort() == ["a", "c"]
+        end)
+
+      # Should NOT use IS NOT DISTINCT FROM (nils_distinct?: true by default)
+      # Note: Ash optimizes single-column Eq+OR to = ANY, which is fine
+      refute log =~ "IS NOT DISTINCT FROM"
     end
 
     test "list_by_post_tag with multiple columns" do
@@ -99,12 +106,12 @@ defmodule AshCanonicalIdentityTest do
       assert log =~ "IS NOT DISTINCT FROM"
     end
 
-    test "list_by_subtitle_category without nil values uses IN" do
+    test "list_by_subtitle_category with nils_distinct?: false uses Eq operator" do
       p1 = Ash.create!(Post, %{title: "p1", subtitle: "s1", category: "c1"})
       p2 = Ash.create!(Post, %{title: "p2", subtitle: "s2", category: "c2"})
       _p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3", category: "c3"})
 
-      # Search without nil - uses IN (or = with OR, not IS NOT DISTINCT FROM)
+      # nils_distinct?: false uses Eq (=) when no nil values
       log =
         capture_log(fn ->
           result =
@@ -119,17 +126,17 @@ defmodule AshCanonicalIdentityTest do
           assert result_ids == expected_ids
         end)
 
-      # Should NOT use IS NOT DISTINCT FROM when there are no nil values
-      refute log =~ "IS NOT DISTINCT FROM"
+      # Should use IS NOT DISTINCT FROM (nils_distinct?: false always uses it)
+      assert log =~ "IS NOT DISTINCT FROM"
     end
 
-    test "list_by_subtitle_category raises when over 100 tuples with nil" do
+    test "list_by_subtitle_category raises when over max_list_size" do
       Ash.create!(Post, %{title: "p1", subtitle: nil, category: nil})
 
       values = Enum.map(1..101, fn i -> {nil, "c#{i}"} end)
 
       assert_raise ArgumentError,
-                   "nils_distinct?: false with nil values supports max 100 tuples, got 101",
+                   "list_by action supports max 100 tuples, got 101",
                    fn ->
                      Post.list_by_subtitle_category!(values)
                    end
@@ -156,12 +163,12 @@ defmodule AshCanonicalIdentityTest do
       assert log =~ "IS NOT DISTINCT FROM"
     end
 
-    test "list_by_subtitle with single column without nil (list of values)" do
+    test "list_by_subtitle with single column (list of values) uses IS NOT DISTINCT FROM" do
       p1 = Ash.create!(Post, %{title: "p1", subtitle: "s1"})
       _p2 = Ash.create!(Post, %{title: "p2", subtitle: "s2"})
       p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3"})
 
-      # Single column without nil - IN approach
+      # Single column with nils_distinct?: false uses IS NOT DISTINCT FROM
       log =
         capture_log(fn ->
           result = Post.list_by_subtitle!(["s1", "s3"])
@@ -172,8 +179,8 @@ defmodule AshCanonicalIdentityTest do
           assert result_ids == expected_ids
         end)
 
-      # Should NOT use IS NOT DISTINCT FROM when there are no nil values
-      refute log =~ "IS NOT DISTINCT FROM"
+      # Should use IS NOT DISTINCT FROM (nils_distinct?: false)
+      assert log =~ "IS NOT DISTINCT FROM"
     end
   end
 

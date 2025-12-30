@@ -1,5 +1,7 @@
 spark_locals_without_parens = [
-  action: 1,
+  get_action: 1,
+  list_action: 1,
+  max_list_size: 1,
   all_tenants?: 1,
   identity: 1,
   identity: 2,
