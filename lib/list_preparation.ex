@@ -10,10 +10,14 @@ defmodule AshCanonicalIdentity.ListPreparation do
 
     values = Ash.Query.get_argument(query, :values)
 
-    # Check max_list_size
-    if length(values) > max_list_size do
+    # Check if OR expansion is needed
+    # Single-column with nils_distinct?: true will be optimized to = ANY by Ash
+    needs_or_expansion? = length(attr_names) > 1 or not nils_distinct?
+
+    # Check max_list_size only when OR expansion is needed
+    if needs_or_expansion? and length(values) > max_list_size do
       raise ArgumentError,
-            "list_by action supports max #{max_list_size} tuples, got #{length(values)}"
+            "list_by action with OR expansion supports max #{max_list_size} tuples, got #{length(values)}"
     end
 
     # Build OR filter based on nils_distinct?

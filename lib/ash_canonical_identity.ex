@@ -72,12 +72,22 @@ defmodule AshCanonicalIdentity do
         type: :pos_integer,
         default: 100,
         doc: """
-        Maximum number of tuples allowed for list_by action. Raises ArgumentError if exceeded.
+        Maximum number of tuples allowed for list_by action when OR expansion is required.
+        Raises ArgumentError if exceeded.
+
+        ## When this limit applies
+
+        This limit is only enforced when the query must be expanded into OR conditions:
+        - **Multi-column identities** (e.g., `[:subtitle, :category]`)
+        - **Single-column with `nils_distinct?: false`** (requires `IS NOT DISTINCT FROM`)
+
+        This limit does NOT apply to:
+        - **Single-column with `nils_distinct?: true`** (default) - Ash optimizes these to `= ANY(array)` automatically
 
         ## Why this limit exists
 
         PostgreSQL doesn't natively support tuple lists in the IN operator (e.g., `WHERE (a, b) IN ((1, 2), (3, 4))`).
-        While single-column IN queries use efficient `= ANY(array)` syntax, multi-column queries must be expanded into OR conditions:
+        These queries must be expanded into OR conditions:
 
         ```sql
         WHERE ((a = 1 AND b = 2) OR (a = 3 AND b = 4) OR ...)
