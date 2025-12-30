@@ -16,10 +16,8 @@ defmodule AshCanonicalIdentity.MixProject do
       package: package(),
       source_url: "https://github.com/devall-org/ash_canonical_identity",
       homepage_url: "https://github.com/devall-org/ash_canonical_identity",
-      docs: [
-        main: "readme",
-        extras: ["README.md"]
-      ]
+      docs: docs(),
+      spark: spark_opts()
     ]
   end
 
@@ -63,6 +61,76 @@ defmodule AshCanonicalIdentity.MixProject do
       links: %{
         "GitHub" => "https://github.com/devall-org/ash_canonical_identity"
       }
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: [
+        {"README.md", title: "Home"},
+        {"documentation/dsls/ash-canonical-identity.md", title: "DSL: AshCanonicalIdentity"}
+      ],
+      groups_for_extras: [
+        DSLs: ~r'documentation/dsls'
+      ],
+      groups_for_modules: [
+        Extensions: [
+          AshCanonicalIdentity,
+          AshCanonicalIdentity.Identity,
+          AshCanonicalIdentity.Info
+        ],
+        Internals: [
+          AshCanonicalIdentity.Transformer,
+          AshCanonicalIdentity.ListPreparation
+        ]
+      ],
+      spark: [
+        extensions: [
+          %{
+            module: AshCanonicalIdentity,
+            name: "AshCanonicalIdentity",
+            target: "Ash.Resource",
+            type: "Resource"
+          }
+        ]
+      ],
+      before_closing_body_tag: &before_closing_body_tag/1
+    ]
+  end
+
+  defp before_closing_body_tag(:html) do
+    """
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.2.3/dist/mermaid.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: document.body.className.includes("dark") ? "dark" : "default"
+        });
+        let id = 0;
+        for (const codeEl of document.querySelectorAll("pre code.mermaid")) {
+          const preEl = codeEl.parentElement;
+          const graphDefinition = codeEl.textContent;
+          const graphEl = document.createElement("div");
+          const graphId = "mermaid-graph-" + id++;
+          mermaid.render(graphId, graphDefinition).then(({svg, bindFunctions}) => {
+            graphEl.innerHTML = svg;
+            bindFunctions?.(graphEl);
+            preEl.insertAdjacentElement("afterend", graphEl);
+            preEl.remove();
+          });
+        }
+      });
+    </script>
+    """
+  end
+
+  defp before_closing_body_tag(_), do: ""
+
+  defp spark_opts do
+    [
+      extensions: [AshCanonicalIdentity]
     ]
   end
 end

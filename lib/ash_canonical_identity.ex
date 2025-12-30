@@ -1,4 +1,11 @@
 defmodule AshCanonicalIdentity do
+  @moduledoc """
+  An Ash extension that provides canonical identity configuration.
+
+  This extension automatically generates identity constraints, get_by/list_by actions,
+  and code interface definitions based on your identity configuration.
+  """
+
   defmodule Identity do
     defstruct [
       :attr_or_belongs_toes,
@@ -38,24 +45,20 @@ defmodule AshCanonicalIdentity do
       name: [
         type: :atom,
         default: :auto,
-        doc: """
-        Name to be used for the identity.
-        If :auto, it will be generated as cart_product when attr_or_belongs_toes is [:cart, :product].
-        """
+        doc:
+          "Name to be used for the identity. If :auto, it will be generated as cart_product when attr_or_belongs_toes is [:cart, :product]."
       ],
       get_action: [
         type: :atom,
         default: :auto,
-        doc: """
-        Name for get_by action. If :auto, generates get_by_cart_product. If false, no action created.
-        """
+        doc:
+          "Name for get_by action. If :auto, generates get_by_cart_product. If false, no action created."
       ],
       list_action: [
         type: :atom,
         default: :auto,
-        doc: """
-        Name for list_by action. If :auto, generates list_by_cart_product. If false, no action created.
-        """
+        doc:
+          "Name for list_by action. If :auto, generates list_by_cart_product. If false, no action created."
       ],
       where: [
         type: :any,
@@ -71,35 +74,8 @@ defmodule AshCanonicalIdentity do
       unoptimized_list_limit: [
         type: :pos_integer,
         default: 100,
-        doc: """
-        Maximum number of items allowed for list_by action when query optimization is not possible.
-        Raises ArgumentError if exceeded.
-
-        ## When this limit applies
-
-        This limit is only enforced when the query cannot be optimized and must use OR expansion:
-        - **Multi-column identities** (e.g., `[:subtitle, :category]`)
-        - **Single-column with `nils_distinct?: false`** (requires `IS NOT DISTINCT FROM`)
-
-        This limit does NOT apply to:
-        - **Single-column with `nils_distinct?: true`** (default) - Ash optimizes these to `= ANY(array)` automatically
-
-        ## Why this limit exists
-
-        PostgreSQL doesn't natively support tuple lists in the IN operator (e.g., `WHERE (a, b) IN ((1, 2), (3, 4))`).
-        Unoptimized queries must be expanded into OR conditions:
-
-        ```sql
-        WHERE ((a = 1 AND b = 2) OR (a = 3 AND b = 4) OR ...)
-        ```
-
-        Large OR chains can impact query performance and planning time. This limit prevents accidentally creating
-        queries with thousands of OR conditions. If you need to query more records, consider:
-
-        - Increasing this limit if your use case requires it
-        - Using a temporary table or JOIN approach for very large datasets
-        - Splitting the query into multiple batches
-        """
+        doc:
+          "Maximum number of items allowed for list_by action when query optimization is not possible. See the module documentation for details."
       ]
     ]
   }
@@ -111,6 +87,12 @@ defmodule AshCanonicalIdentity do
     """,
     entities: [@identity]
   }
+
+  @doc false
+  def spark_sections, do: [@canonical_identities]
+
+  @doc false
+  def spark_transformers, do: [AshCanonicalIdentity.Transformer]
 
   use Spark.Dsl.Extension,
     sections: [@canonical_identities],

@@ -2,6 +2,11 @@
 
 Generate identity, get_by/list_by actions and code_interface for unique keys.
 
+## Documentation
+
+- [DSL Reference](documentation/dsls/ash-canonical-identity.md)
+- [API Documentation](https://hexdocs.pm/ash_canonical_identity)
+
 ## Installation
 
 Add `ash_canonical_identity` to your list of dependencies in `mix.exs`:
