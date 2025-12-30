@@ -32,7 +32,7 @@ defmodule AshCanonicalIdentity.Transformer do
     |> Transformer.get_entities([:canonical_identities])
     |> Enum.reduce(
       {:ok, dsl_state},
-      fn          %AshCanonicalIdentity.Identity{
+      fn %AshCanonicalIdentity.Identity{
            attr_or_belongs_toes: attr_or_belongs_toes,
            all_tenants?: all_tenants?,
            name: name,
