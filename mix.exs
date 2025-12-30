@@ -10,6 +10,7 @@ defmodule AshCanonicalIdentity.MixProject do
       consolidate_protocols: Mix.env() not in [:dev, :test],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: aliases(),
       description:
         "Generate identity, get_by/list_by actions and code_interface for unique keys.",
       package: package(),
@@ -19,6 +20,12 @@ defmodule AshCanonicalIdentity.MixProject do
         main: "readme",
         extras: ["README.md"]
       ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: ["test.reset": :test]
     ]
   end
 
@@ -40,6 +47,12 @@ defmodule AshCanonicalIdentity.MixProject do
       {:spark, ">= 0.0.0"},
       {:sourceror, ">= 0.0.0", only: [:dev, :test], optional: true},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false}
+    ]
+  end
+
+  defp aliases do
+    [
+      "test.reset": ["ecto.drop", "ecto.create", "ecto.migrate", "test"]
     ]
   end
 
