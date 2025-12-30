@@ -26,12 +26,24 @@ defmodule AshCanonicalIdentityTest do
   end
 
   describe "list_action" do
-    test "list_by_title returns multiple posts" do
+    test "list_by_title returns multiple posts (single column, list of tuples)" do
       Ash.create!(Post, %{title: "a"})
       Ash.create!(Post, %{title: "b"})
       Ash.create!(Post, %{title: "c"})
 
       result = Post.list_by_title!([{"a"}, {"c"}])
+
+      assert length(result) == 2
+      assert Enum.map(result, & &1.title) |> Enum.sort() == ["a", "c"]
+    end
+
+    test "list_by_title with single column list of values" do
+      Ash.create!(Post, %{title: "a"})
+      Ash.create!(Post, %{title: "b"})
+      Ash.create!(Post, %{title: "c"})
+
+      # Single column can also use list of values
+      result = Post.list_by_title!(["a", "c"])
 
       assert length(result) == 2
       assert Enum.map(result, & &1.title) |> Enum.sort() == ["a", "c"]
@@ -55,6 +67,96 @@ defmodule AshCanonicalIdentityTest do
       result_ids = Enum.map(result, & &1.id) |> Enum.sort()
       expected_ids = [pt1.id, pt3.id] |> Enum.sort()
       assert result_ids == expected_ids
+    end
+
+    test "list_by_subtitle_category with nil values and nils_distinct?: false" do
+      p1 = Ash.create!(Post, %{title: "p1", subtitle: "s1", category: "c1"})
+      p2 = Ash.create!(Post, %{title: "p2", subtitle: nil, category: "c2"})
+      p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3", category: nil})
+      p4 = Ash.create!(Post, %{title: "p4", subtitle: nil, category: nil})
+      _p5 = Ash.create!(Post, %{title: "p5", subtitle: "s5", category: "c5"})
+
+      # Search with nil values - uses IS NOT DISTINCT FROM
+      result =
+        Post.list_by_subtitle_category!([
+          {"s1", "c1"},
+          {nil, "c2"},
+          {"s3", nil},
+          {nil, nil}
+        ])
+
+      assert length(result) == 4
+      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+      expected_ids = [p1.id, p2.id, p3.id, p4.id] |> Enum.sort()
+      assert result_ids == expected_ids
+    end
+
+    test "list_by_subtitle_category without nil values uses IN" do
+      p1 = Ash.create!(Post, %{title: "p1", subtitle: "s1", category: "c1"})
+      p2 = Ash.create!(Post, %{title: "p2", subtitle: "s2", category: "c2"})
+      _p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3", category: "c3"})
+
+      # Search without nil - uses IN
+      result =
+        Post.list_by_subtitle_category!([
+          {"s1", "c1"},
+          {"s2", "c2"}
+        ])
+
+      assert length(result) == 2
+      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+      expected_ids = [p1.id, p2.id] |> Enum.sort()
+      assert result_ids == expected_ids
+    end
+
+    test "list_by_subtitle_category raises when over 100 tuples with nil" do
+      Ash.create!(Post, %{title: "p1", subtitle: nil, category: nil})
+
+      values = Enum.map(1..101, fn i -> {nil, "c#{i}"} end)
+
+      assert_raise ArgumentError,
+                   "nils_distinct?: false with nil values supports max 100 tuples, got 101",
+                   fn ->
+                     Post.list_by_subtitle_category!(values)
+                   end
+    end
+
+    test "list_by_subtitle with single column and nil values (list of values)" do
+      p1 = Ash.create!(Post, %{title: "p1", subtitle: "s1"})
+      p2 = Ash.create!(Post, %{title: "p2", subtitle: nil})
+      p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3"})
+      _p4 = Ash.create!(Post, %{title: "p4", subtitle: "s4"})
+
+      # Single column with nil - passed as list of values
+      result = Post.list_by_subtitle!(["s1", nil, "s3"])
+
+      assert length(result) == 3
+      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+      expected_ids = [p1.id, p2.id, p3.id] |> Enum.sort()
+      assert result_ids == expected_ids
+    end
+
+    test "list_by_subtitle with single column without nil (list of values)" do
+      p1 = Ash.create!(Post, %{title: "p1", subtitle: "s1"})
+      _p2 = Ash.create!(Post, %{title: "p2", subtitle: "s2"})
+      p3 = Ash.create!(Post, %{title: "p3", subtitle: "s3"})
+
+      # Single column without nil - IN approach
+      result = Post.list_by_subtitle!(["s1", "s3"])
+
+      assert length(result) == 2
+      result_ids = Enum.map(result, & &1.id) |> Enum.sort()
+      expected_ids = [p1.id, p3.id] |> Enum.sort()
+      assert result_ids == expected_ids
+    end
+  end
+
+  describe "get_action with nil" do
+    test "get_by_subtitle_category with nil values and nils_distinct?: false" do
+      p1 = Ash.create!(Post, %{title: "p1", subtitle: nil, category: "c1"})
+
+      result = Post.get_by_subtitle_category!(nil, "c1")
+      assert result.id == p1.id
     end
   end
 end

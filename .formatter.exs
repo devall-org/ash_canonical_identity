@@ -9,7 +9,7 @@ spark_locals_without_parens = [
 ]
 
 [
-  import_deps: [:spark, :reactor, :ash],
+  import_deps: [:spark, :reactor, :ash, :ash_postgres],
   inputs: [
     "{mix,.formatter}.exs",
     "{config,lib,test}/**/*.{ex,exs}"

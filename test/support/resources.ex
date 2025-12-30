@@ -12,6 +12,8 @@ defmodule AshCanonicalIdentity.Test.Post do
   attributes do
     uuid_primary_key :id
     attribute :title, :string, allow_nil?: false, public?: true
+    attribute :subtitle, :string, allow_nil?: true, public?: true
+    attribute :category, :string, allow_nil?: true, public?: true
   end
 
   actions do
@@ -20,6 +22,8 @@ defmodule AshCanonicalIdentity.Test.Post do
 
   canonical_identities do
     identity [:title]
+    identity [:subtitle], nils_distinct?: false
+    identity [:subtitle, :category], nils_distinct?: false
   end
 end
 

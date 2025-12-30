@@ -10,7 +10,8 @@ defmodule AshCanonicalIdentity.MixProject do
       consolidate_protocols: Mix.env() not in [:dev, :test],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "Generate identity, get_by/list_by actions and code_interface for unique keys.",
+      description:
+        "Generate identity, get_by/list_by actions and code_interface for unique keys.",
       package: package(),
       source_url: "https://github.com/devall-org/ash_canonical_identity",
       homepage_url: "https://github.com/devall-org/ash_canonical_identity",
@@ -35,7 +36,7 @@ defmodule AshCanonicalIdentity.MixProject do
   defp deps do
     [
       {:ash, ">= 0.0.0"},
-      {:ash_postgres, ">= 0.0.0", only: :test},
+      {:ash_postgres, ">= 0.0.0"},
       {:spark, ">= 0.0.0"},
       {:sourceror, ">= 0.0.0", only: [:dev, :test], optional: true},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false}

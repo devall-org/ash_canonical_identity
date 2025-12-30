@@ -50,7 +50,7 @@ defmodule AshCanonicalIdentity.Transformer do
 
         {:ok, dsl_state} = dsl_state |> Builder.add_identity(name, attr_names, opts)
 
-        # get_action 처리
+        # Handle get_action
         dsl_state =
           if get_action do
             action_name = if get_action == :auto, do: :"get_by_#{name}", else: get_action
@@ -59,7 +59,7 @@ defmodule AshCanonicalIdentity.Transformer do
             dsl_state
           end
 
-        # list_action 처리
+        # Handle list_action
         dsl_state =
           if list_action do
             action_name = if list_action == :auto, do: :"list_by_#{name}", else: list_action
@@ -109,7 +109,7 @@ defmodule AshCanonicalIdentity.Transformer do
       |> Enum.map(fn attr_name ->
         case nils_distinct? do
           true -> expr(^ref(attr_name) == ^arg(attr_name))
-          false -> expr(nil_safe_equals(^ref(attr_name), ^arg(attr_name)))
+          false -> expr(fragment("? IS NOT DISTINCT FROM ?", ^ref(attr_name), ^arg(attr_name)))
         end
       end)
       |> then(fn filters ->
@@ -134,17 +134,20 @@ defmodule AshCanonicalIdentity.Transformer do
 
   defp add_list_action(dsl_state, action_name, attr_names, opts) do
     where = opts |> Keyword.fetch!(:where)
+    nils_distinct? = opts |> Keyword.fetch!(:nils_distinct?)
 
     action_argument =
       Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :argument,
         name: :values,
-        type: {:array, :term},
+        type: :term,
         allow_nil?: false
       )
 
     action_prepare =
       Transformer.build_entity!(Ash.Resource.Dsl, [:actions, :read], :prepare,
-        preparation: {AshCanonicalIdentity.ListPreparation, attr_names: attr_names, where: where}
+        preparation:
+          {AshCanonicalIdentity.ListPreparation,
+           attr_names: attr_names, where: where, nils_distinct?: nils_distinct?}
       )
 
     dsl_state

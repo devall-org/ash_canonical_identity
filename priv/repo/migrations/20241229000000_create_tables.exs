@@ -5,9 +5,12 @@ defmodule AshCanonicalIdentity.Test.Repo.Migrations.CreateTables do
     create table(:posts, primary_key: false) do
       add :id, :uuid, primary_key: true
       add :title, :string, null: false
+      add :subtitle, :string, null: true
+      add :category, :string, null: true
     end
 
     create unique_index(:posts, [:title])
+    create unique_index(:posts, [:subtitle, :category])
 
     create table(:post_tags, primary_key: false) do
       add :id, :uuid, primary_key: true
