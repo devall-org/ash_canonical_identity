@@ -213,6 +213,21 @@ defmodule AshCanonicalIdentityTest do
                      Post.list_by_subtitle!(values)
                    end
     end
+
+    test "list_by with empty values returns empty list" do
+      Ash.create!(Post, %{title: "a", subtitle: "s1", category: "c1"})
+      post = Ash.create!(Post, %{title: "b"})
+      Ash.create!(PostTag, %{post_id: post.id, tag: "t1"})
+
+      # Single column, nils_distinct?: true (optimizable path)
+      assert Post.list_by_title!([]) == []
+
+      # Multi-column
+      assert PostTag.list_by_post_tag!([]) == []
+
+      # Multi-column, nils_distinct?: false
+      assert Post.list_by_subtitle_category!([]) == []
+    end
   end
 
   describe "get_action with nil" do
