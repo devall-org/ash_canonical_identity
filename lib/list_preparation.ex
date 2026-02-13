@@ -20,13 +20,17 @@ defmodule AshCanonicalIdentity.ListPreparation do
             "list_by action without optimization supports max #{unoptimized_list_limit} items, got #{length(values)}"
     end
 
-    # Build OR filter based on nils_distinct?
-    or_filter = build_or_filter(attr_names, values, nils_distinct?)
-
     filter =
-      case where do
-        nil -> or_filter
-        w -> %Ash.Query.BooleanExpression{op: :and, left: w, right: or_filter}
+      if Enum.empty?(values) do
+        expr(false)
+      else
+        # Build OR filter based on nils_distinct?
+        or_filter = build_or_filter(attr_names, values, nils_distinct?)
+
+        case where do
+          nil -> or_filter
+          w -> %Ash.Query.BooleanExpression{op: :and, left: w, right: or_filter}
+        end
       end
 
     Ash.Query.do_filter(query, filter)
