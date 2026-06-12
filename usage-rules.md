@@ -114,6 +114,10 @@ canonical_identities do
 end
 ```
 
+The filter is applied to generated read actions. For `get_by`, it is added to the
+generated action filters. For `list_by`, it is combined with the generated
+value-matching filter in `AshCanonicalIdentity.ListPreparation`.
+
 ### nils_distinct?
 
 Specify if `nil` values should always be treated as distinct (default: `true`):

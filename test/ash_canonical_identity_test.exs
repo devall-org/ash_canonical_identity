@@ -25,6 +25,14 @@ defmodule AshCanonicalIdentityTest do
       assert post_tag.id == PostTag.get_by_post_tag!(post.id, "elixir").id
       assert {:error, %Ash.Error.Invalid{}} = PostTag.get_by_post_tag(post.id, "other")
     end
+
+    test "get_by with where only returns matching records" do
+      published = Ash.create!(Post, %{title: "published", category: "published"})
+      Ash.create!(Post, %{title: "draft", category: "draft"})
+
+      assert published.id == Post.get_by_published_title!("published").id
+      assert {:error, %Ash.Error.Invalid{}} = Post.get_by_published_title("draft")
+    end
   end
 
   describe "list_action" do
@@ -227,6 +235,15 @@ defmodule AshCanonicalIdentityTest do
 
       # Multi-column, nils_distinct?: false
       assert Post.list_by_subtitle_category!([]) == []
+    end
+
+    test "list_by with where only returns matching records" do
+      published = Ash.create!(Post, %{title: "published", category: "published"})
+      Ash.create!(Post, %{title: "draft", category: "draft"})
+
+      result = Post.list_by_published_title!(["published", "draft"])
+
+      assert Enum.map(result, & &1.id) == [published.id]
     end
   end
 
