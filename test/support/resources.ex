@@ -22,6 +22,7 @@ defmodule AshCanonicalIdentity.Test.Post do
 
   canonical_identities do
     identity [:title]
+    identity [:title], name: :published_title, where: expr(category == "published")
     identity [:subtitle], nils_distinct?: false
     identity [:subtitle, :category], nils_distinct?: false
   end

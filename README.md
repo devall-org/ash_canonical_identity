@@ -64,6 +64,10 @@ canonical_identities do
 end
 ```
 
+When `where` is set, it is applied to generated read actions. `get_by` actions
+receive it as an action filter, while `list_by` actions combine it with the
+generated value-matching filter in `AshCanonicalIdentity.ListPreparation`.
+
 ### Examples
 
 ```elixir
