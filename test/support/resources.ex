@@ -57,6 +57,29 @@ defmodule AshCanonicalIdentity.Test.PostTag do
   end
 end
 
+defmodule AshCanonicalIdentity.Test.ReadActionsDisabled do
+  use Ash.Resource,
+    data_layer: :embedded,
+    extensions: [AshCanonicalIdentity]
+
+  attributes do
+    uuid_primary_key :id
+    attribute :name, :string, allow_nil?: false, public?: true
+    attribute :category, :string, allow_nil?: false, public?: true
+  end
+
+  actions do
+    defaults [:read]
+  end
+
+  canonical_identities do
+    generate_read_actions?(false)
+
+    identity [:name]
+    identity [:category], get_action: :get_by_category, list_action: :list_by_category
+  end
+end
+
 defmodule AshCanonicalIdentity.Test.Domain do
   use Ash.Domain, validate_config_inclusion?: false
 
