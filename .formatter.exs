@@ -1,4 +1,5 @@
 spark_locals_without_parens = [
+  generate_read_actions?: 1,
   get_action: 1,
   list_action: 1,
   unoptimized_list_limit: 1,

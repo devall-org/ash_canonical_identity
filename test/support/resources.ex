@@ -73,7 +73,7 @@ defmodule AshCanonicalIdentity.Test.ReadActionsDisabled do
   end
 
   canonical_identities do
-    generate_read_actions?(false)
+    generate_read_actions? false
 
     identity [:name]
     identity [:category], get_action: :get_by_category, list_action: :list_by_category
