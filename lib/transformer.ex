@@ -12,6 +12,9 @@ defmodule AshCanonicalIdentity.Transformer do
   def before?(_), do: true
 
   def transform(dsl_state) do
+    generate_read_actions? =
+      Transformer.get_option(dsl_state, [:canonical_identities], :generate_read_actions?)
+
     attrs =
       dsl_state
       |> Transformer.get_entities([:attributes])
@@ -45,6 +48,9 @@ defmodule AshCanonicalIdentity.Transformer do
          {:ok, dsl_state} ->
         name_joined = Enum.join(attr_or_belongs_toes, "_") |> String.to_atom()
         name = if name == :auto, do: name_joined, else: name
+
+        get_action = inherit_read_action(get_action, generate_read_actions?)
+        list_action = inherit_read_action(list_action, generate_read_actions?)
 
         attr_names = attr_or_belongs_toes |> Enum.map(&Map.fetch!(name_to_attr_name_map, &1))
 
@@ -83,6 +89,10 @@ defmodule AshCanonicalIdentity.Transformer do
       end
     )
   end
+
+  defp inherit_read_action(nil, true), do: :auto
+  defp inherit_read_action(nil, false), do: false
+  defp inherit_read_action(action, _generate_read_actions?), do: action
 
   defp get_belongs_toes(%{} = dsl_state) do
     multitenant_attr = dsl_state |> Transformer.get_option([:multitenancy], :attribute)

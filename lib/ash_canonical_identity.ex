@@ -50,15 +50,15 @@ defmodule AshCanonicalIdentity do
       ],
       get_action: [
         type: :atom,
-        default: :auto,
+        default: nil,
         doc:
-          "Name for get_by action. If :auto, generates get_by_cart_product. If false, no action created."
+          "Name for get_by action. If nil, inherits generate_read_actions?. If :auto, generates get_by_cart_product. If false, no action created."
       ],
       list_action: [
         type: :atom,
-        default: :auto,
+        default: nil,
         doc:
-          "Name for list_by action. If :auto, generates list_by_cart_product. If false, no action created."
+          "Name for list_by action. If nil, inherits generate_read_actions?. If :auto, generates list_by_cart_product. If false, no action created."
       ],
       where: [
         type: :any,
@@ -85,6 +85,13 @@ defmodule AshCanonicalIdentity do
     describe: """
     A section that canonically configures identities, actions, and code_interface based on identity.
     """,
+    schema: [
+      generate_read_actions?: [
+        type: :boolean,
+        default: true,
+        doc: "Whether identities generate get and list read actions by default."
+      ]
+    ],
     entities: [@identity]
   }
 
