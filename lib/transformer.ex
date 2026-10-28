@@ -9,7 +9,12 @@ defmodule AshCanonicalIdentity.Transformer do
   def after?(Ash.Resource.Transformers.BelongsToAttribute), do: true
   def after?(_), do: false
 
-  def before?(_), do: true
+  # belongs_to source attribute가 필요하므로 BelongsToAttribute보다 먼저 실행돼야 하는
+  # transformer(AshPaperTrail의 AddTemporalInlineAttributes 등)보다 앞서지 않는다.
+  def before?(transformer) do
+    not (Code.ensure_loaded?(transformer) and function_exported?(transformer, :before?, 1) and
+           transformer.before?(Ash.Resource.Transformers.BelongsToAttribute))
+  end
 
   def transform(dsl_state) do
     generate_read_actions? =
