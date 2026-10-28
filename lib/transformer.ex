@@ -5,11 +5,15 @@ defmodule AshCanonicalIdentity.Transformer do
   alias Ash.Resource.Attribute
   alias Ash.Resource.Relationships.BelongsTo
   alias Ash.Resource.Builder
+  alias Ash.Resource.Transformers.BelongsToAttribute
 
-  def after?(Ash.Resource.Transformers.BelongsToAttribute), do: true
+  def after?(BelongsToAttribute), do: true
   def after?(_), do: false
 
-  def before?(_), do: true
+  # Generate identities and actions before their consumers validate them.
+  def before?(Ash.Resource.Transformers.SetPrimaryActions), do: true
+  def before?(AshAuthentication.Transformer), do: true
+  def before?(_), do: false
 
   def transform(dsl_state) do
     generate_read_actions? =
