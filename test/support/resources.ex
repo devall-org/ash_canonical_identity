@@ -17,7 +17,12 @@ defmodule AshCanonicalIdentity.Test.Post do
   end
 
   actions do
-    defaults [:read, :destroy, create: :*, update: :*]
+    defaults [
+      :read,
+      :destroy,
+      create: [:title, :subtitle, :category],
+      update: [:title, :subtitle, :category]
+    ]
   end
 
   canonical_identities do
@@ -45,7 +50,7 @@ defmodule AshCanonicalIdentity.Test.PostTag do
   end
 
   actions do
-    defaults [:read, :destroy, create: :*, update: :*]
+    defaults [:read, :destroy, create: [:post_id, :tag], update: [:post_id, :tag]]
   end
 
   relationships do
